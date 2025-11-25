@@ -4,7 +4,7 @@
     "dockerfile": "Dockerfile",
     "context": ".."
   },
-  
+
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {}
@@ -30,9 +30,9 @@
   },
 
   "postCreateCommand": "pnpm install",
-  
+
   "remoteUser": "node",
-  
+
   "mounts": [
     "source=${localWorkspaceFolder}/wa_credentials,target=/workspace/wa_credentials,type=bind,consistency=cached",
     "source=${localWorkspaceFolder}/media,target=/workspace/media,type=bind,consistency=cached",
@@ -40,7 +40,7 @@
   ],
 
   "forwardPorts": [3002, 5001],
-  
+
   "portsAttributes": {
     "3002": {
       "label": "WA Gateway (Production)",
@@ -61,9 +61,5 @@
     "NODE_ENV": "DEVELOPMENT",
     "PORT": "5001"
   },
-
-  "runArgs": [
-    "--init"
-  ]
+  "runArgs": ["--init"]
 }
-
