@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@hono/node-server": "^1.13.7",
+    "@hono/swagger-ui": "^0.5.2",
     "@hono/zod-validator": "^0.4.1",
     "@types/bcrypt": "^6.0.0",
     "@types/better-sqlite3": "^7.6.13",

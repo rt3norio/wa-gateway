@@ -1,0 +1,69 @@
+{
+  "name": "WA Gateway Development",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-next"
+      ],
+      "settings": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "typescript.enablePromptUseWorkspaceTsdk": true
+      }
+    }
+  },
+
+  "postCreateCommand": "pnpm install",
+  
+  "remoteUser": "node",
+  
+  "mounts": [
+    "source=${localWorkspaceFolder}/wa_credentials,target=/workspace/wa_credentials,type=bind,consistency=cached",
+    "source=${localWorkspaceFolder}/media,target=/workspace/media,type=bind,consistency=cached",
+    "source=${localWorkspaceFolder}/db,target=/workspace/db,type=bind,consistency=cached"
+  ],
+
+  "forwardPorts": [3002, 5001],
+  
+  "portsAttributes": {
+    "3002": {
+      "label": "WA Gateway (Production)",
+      "onAutoForward": "notify"
+    },
+    "5001": {
+      "label": "WA Gateway (Development)",
+      "onAutoForward": "notify"
+    }
+  },
+
+  "remoteEnv": {
+    "NODE_ENV": "DEVELOPMENT",
+    "PORT": "5001"
+  },
+
+  "containerEnv": {
+    "NODE_ENV": "DEVELOPMENT",
+    "PORT": "5001"
+  },
+
+  "runArgs": [
+    "--init"
+  ]
+}
+

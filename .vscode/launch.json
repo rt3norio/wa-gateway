@@ -1,0 +1,60 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Dev (tsx watch)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["run", "dev"],
+      "skipFiles": ["<node_internals>/**"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "env": {
+        "NODE_ENV": "DEVELOPMENT",
+        "PORT": "5001"
+      },
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "name": "Debug Start (tsx)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["run", "start"],
+      "skipFiles": ["<node_internals>/**"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "env": {
+        "NODE_ENV": "DEVELOPMENT",
+        "PORT": "5001"
+      },
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "name": "Debug Current TS File",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "tsx",
+      "runtimeArgs": ["${file}"],
+      "skipFiles": ["<node_internals>/**"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "env": {
+        "NODE_ENV": "DEVELOPMENT",
+        "PORT": "5001"
+      },
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "name": "Attach to Process",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "skipFiles": ["<node_internals>/**"],
+      "localRoot": "${workspaceFolder}",
+      "remoteRoot": "${workspaceFolder}"
+    }
+  ]
+}

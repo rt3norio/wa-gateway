@@ -16,10 +16,12 @@ import { createProfileController } from "./controllers/profile";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { createAdminController } from "./controllers/admin";
 import { createDashboardController } from "./controllers/dashboard";
+import { createDocsController } from "./controllers/docs";
 import fs from "fs";
 import path from "path";
 // Initialize database
 import "./database/db";
+import { qrStore } from "./utils/qr-store";
 
 
 
@@ -68,6 +70,11 @@ app.get("/health", (c) => {
 });
 
 /**
+ * API Documentation
+ */
+app.route("/docs", createDocsController());
+
+/**
  * dashboard routes
  */
 app.route("/dashboard", createDashboardController());
@@ -102,6 +109,7 @@ serve(
 
 whastapp.onConnected((session) => {
   console.log(`session: '${session}' connected`);
+  qrStore.removeQR(session);
 });
 
 // Implement Per-User Webhook
@@ -222,6 +230,7 @@ const sendSessionWebhook = async (sessionName: string, status: "connected" | "co
 
 whastapp.onConnected((session) => {
   console.log(`session: '${session}' connected`);
+  qrStore.removeQR(session);
   sendSessionWebhook(session, "connected");
 });
 

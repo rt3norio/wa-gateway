@@ -1,8 +1,8 @@
 # Multi-stage build for WhatsApp Gateway
 FROM node:20-alpine AS base
 
-# Install pnpm
-RUN npm install -g pnpm
+# Enable Corepack for pnpm (built into Node.js 20+)
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Build stage
 FROM base AS builder

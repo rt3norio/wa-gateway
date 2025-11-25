@@ -7,6 +7,7 @@ import { toDataURL } from "qrcode";
 import { HTTPException } from "hono/http-exception";
 import { basicAuthMiddleware } from "../middlewares/auth.middleware";
 import type { User } from "../database/db";
+import { qrStore } from "../utils/qr-store";
 
 type Variables = {
   user: User;
@@ -62,17 +63,20 @@ export const createSessionController = () => {
       const qr = await new Promise<string | null>(async (r) => {
         await whatsapp.startSession(sessionName, {
           onConnected() {
+            qrStore.removeQR(sessionName);
             r(null);
           },
           onQRUpdated(qr) {
+            qrStore.storeQR(sessionName, qr);
             r(qr);
           },
         });
       });
 
       if (qr) {
+        const qrDataUrl = await toDataURL(qr);
         return c.json({
-          qr: qr,
+          qr: qrDataUrl,
           session: sessionName,
         });
       }
@@ -105,9 +109,11 @@ export const createSessionController = () => {
       const qr = await new Promise<string | null>(async (r) => {
         await whatsapp.startSession(sessionName, {
           onConnected() {
+            qrStore.removeQR(sessionName);
             r(null);
           },
           onQRUpdated(qr) {
+            qrStore.storeQR(sessionName, qr);
             r(qr);
           },
         });
@@ -227,10 +233,161 @@ export const createSessionController = () => {
     }
     
     await whatsapp.deleteSession(sessionParam);
+    qrStore.removeQR(sessionParam);
     return c.json({
       data: "success",
     });
   });
+
+  // Get QR code for a session (for polling during connection)
+  app.get("/:session/qr", async (c) => {
+    const user = c.get("user") as User;
+    const sessionName = c.req.param("session");
+    
+    // For non-admin users, ensure they can only access their own session
+    if (user.is_admin !== 1 && sessionName !== user.username) {
+      throw new HTTPException(403, {
+        message: "You can only access your own session",
+      });
+    }
+
+    const qr = qrStore.getQR(sessionName);
+    if (!qr) {
+      // Check if session is already connected
+      const session = whatsapp.getSession(sessionName);
+      if (session?.user) {
+        throw new HTTPException(400, {
+          message: "Session is already connected",
+        });
+      }
+      throw new HTTPException(404, {
+        message: "QR code not found. Session may not be in the process of connecting.",
+      });
+    }
+
+    const qrDataUrl = await toDataURL(qr);
+    return c.json({
+      data: {
+        qr: qrDataUrl,
+        session: sessionName,
+      },
+    });
+  });
+
+  // Get session status/details
+  app.get("/:session/status", async (c) => {
+    const user = c.get("user") as User;
+    const sessionName = c.req.param("session");
+    
+    // For non-admin users, ensure they can only access their own session
+    if (user.is_admin !== 1 && sessionName !== user.username) {
+      throw new HTTPException(403, {
+        message: "You can only access your own session",
+      });
+    }
+
+    const session = whatsapp.getSession(sessionName);
+    const isConnected = !!(session?.user);
+    const hasQR = !!qrStore.getQR(sessionName);
+
+    return c.json({
+      data: {
+        session: sessionName,
+        exists: !!session,
+        is_connected: isConnected,
+        has_qr: hasQR,
+        user: session?.user ? {
+          id: session.user.id,
+          name: session.user.name,
+        } : null,
+      },
+    });
+  });
+
+  // Check if a phone number or group exists
+  const checkExistsSchema = z.object({
+    session: z.string(),
+    target: z
+      .string()
+      .refine((v) => v.includes("@s.whatsapp.net") || v.includes("@g.us"), {
+        message: "target must contain '@s.whatsapp.net' or '@g.us'",
+      }),
+  });
+
+  app.post(
+    "/check-exists",
+    requestValidator("json", checkExistsSchema),
+    async (c) => {
+      const payload = c.req.valid("json");
+      const user = c.get("user") as User;
+      
+      // For non-admin users, ensure they can only use their own sessions
+      const expectedSession = user.username;
+      if (user.is_admin !== 1 && payload.session !== expectedSession) {
+        throw new HTTPException(403, {
+          message: `You can only use your session: ${expectedSession}`,
+        });
+      }
+      
+      const isExist = whatsapp.getSession(payload.session);
+      if (!isExist) {
+        throw new HTTPException(400, {
+          message: "Session does not exist",
+        });
+      }
+
+      const exists = await whatsapp.isExist({
+        sessionId: payload.session,
+        to: payload.target,
+        isGroup: payload.target.includes("@g.us"),
+      });
+
+      return c.json({
+        data: {
+          exists,
+          target: payload.target,
+        },
+      });
+    }
+  );
+
+  // GET endpoint for checking if a number/group exists (query params)
+  app.get(
+    "/check-exists",
+    requestValidator("query", checkExistsSchema),
+    async (c) => {
+      const payload = c.req.valid("query");
+      const user = c.get("user") as User;
+      
+      // For non-admin users, ensure they can only use their own sessions
+      const expectedSession = user.username;
+      if (user.is_admin !== 1 && payload.session !== expectedSession) {
+        throw new HTTPException(403, {
+          message: `You can only use your session: ${expectedSession}`,
+        });
+      }
+      
+      const isExist = whatsapp.getSession(payload.session);
+      if (!isExist) {
+        throw new HTTPException(400, {
+          message: "Session does not exist",
+        });
+      }
+
+      const exists = await whatsapp.isExist({
+        sessionId: payload.session,
+        to: payload.target,
+        isGroup: payload.target.includes("@g.us"),
+      });
+
+      return c.json({
+        data: {
+          exists,
+          target: payload.target,
+        },
+      });
+    }
+  );
 
   return app;
 };

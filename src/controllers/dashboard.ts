@@ -7,6 +7,7 @@ import { HTTPException } from "hono/http-exception";
 import { userDb } from "../database/db";
 import { requestValidator } from "../middlewares/validation.middleware";
 import { z } from "zod";
+import { qrStore } from "../utils/qr-store";
 
 
 type Variables = {
@@ -160,9 +161,11 @@ export const createDashboardController = () => {
     const qr = await new Promise<string | null>(async (r) => {
       await whatsapp.startSession(sessionName, {
         onConnected() {
+          qrStore.removeQR(sessionName);
           r(null);
         },
         onQRUpdated(qr) {
+          qrStore.storeQR(sessionName, qr);
           r(qr);
         },
       });
@@ -198,6 +201,7 @@ export const createDashboardController = () => {
 
     const sessionName = user.username;
     await whatsapp.deleteSession(sessionName);
+    qrStore.removeQR(sessionName);
 
     return c.json({
       data: {
